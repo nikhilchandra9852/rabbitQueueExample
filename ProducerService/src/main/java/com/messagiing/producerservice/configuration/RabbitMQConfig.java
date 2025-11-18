@@ -3,6 +3,7 @@ package com.messagiing.producerservice.configuration;
 
 import org.springframework.amqp.core.*;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
+import org.springframework.amqp.support.converter.DefaultClassMapper;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -19,8 +20,12 @@ public class RabbitMQConfig {
 
     @Bean
     public Queue queue() {
-        return new Queue(QUEUE_NAME,true);
+        return QueueBuilder.durable(QUEUE_NAME)
+//                .withArgument("x-dead-letter-exchange",EXCHANGE_NAME)
+//                .withArgument("x-dead-letter-routing-key",INVENTORY_DLQ)
+                .build();
     }
+
 
     // create bean fore topic
     @Bean
@@ -36,7 +41,9 @@ public class RabbitMQConfig {
 
     @Bean
     public Jackson2JsonMessageConverter jackson2JsonMessageConverter() {
-        return new Jackson2JsonMessageConverter();
+        Jackson2JsonMessageConverter converter = new Jackson2JsonMessageConverter();
+        converter.setClassMapper(new DefaultClassMapper());
+        return converter;
     }
 
     @Bean
@@ -45,7 +52,21 @@ public class RabbitMQConfig {
 
         RabbitTemplate rabbitTemplate = new RabbitTemplate(connectionFactory);
         rabbitTemplate.setMessageConverter(converter);
+        // enable publisher confirms
+
+        rabbitTemplate.setConfirmCallback((correlationData, ack, cause) -> {
+            if(!ack){
+                System.out.println("Message NOT delivered to exchange! Cause: " + cause);
+            }
+        });
+
+        // enable return callback- if fails
+
+        rabbitTemplate.setReturnsCallback(returnedMessage -> {
+            System.out.println("Message delivered to exchange! ReturnedMessage: " + returnedMessage);
+        });
         return rabbitTemplate;
     }
+
 
 }
