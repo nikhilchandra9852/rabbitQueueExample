@@ -61,9 +61,8 @@ All services use **message metadata** (`messageId`, `correlationId`, `orderId`) 
 
 ```json
 {
-  "orderId": "12345",
-  "productId": "P-001",
-  "quantity": 10,
-  "customerId": "C-001"
+  "orderId":2,
+  "customerId":3,
+  "orderAmount":100.00
 }
 
